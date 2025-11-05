@@ -42,7 +42,7 @@ public class InventoryService {
             handleFailCurrentNotExecuted(event, ex.getMessage());
         }
 
-        producer.sendEvent(jsonUtil.toJson(event));
+        producer.sendEvent(jsonUtil.toJson(event), "");
     }
 
     private void checkCurrentValidation(Event event) {
@@ -126,7 +126,7 @@ public class InventoryService {
             addHistory(event, "Rollback not executed for inventory: ".concat(ex.getMessage()));
         }
 
-        producer.sendEvent(jsonUtil.toJson(event));
+        producer.sendEvent(jsonUtil.toJson(event), "");
     }
 
     private void returnInventoryToPreviousValues(Event event) {
