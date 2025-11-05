@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 public interface OrderInventoryRepository extends JpaRepository<OrderInventory, Integer> {
-    boolean existsByOrderIdAndTransactionId(String orderId, String transactionId);
-    List<OrderInventory> findAllByOrderIdAndTransactionId(String orderId, String transactionId);
+    List<OrderInventory> findByOrderIdAndTransactionId(String orderId, String transactionId);
+    Boolean existsByOrderIdAndTransactionId(String orderId, String transactionId);
 }

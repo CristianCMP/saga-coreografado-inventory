@@ -21,7 +21,7 @@ public class SagaExecutionController {
     private final KafkaProducer producer;
 
     @Value("${spring.kafka.topic.notify-ending}")
-    private String notifyEndingTopic;
+    private String notifyEnding;
 
     @Value("${spring.kafka.topic.inventory-fail}")
     private String inventoryFailTopic;
@@ -29,7 +29,7 @@ public class SagaExecutionController {
     @Value("${spring.kafka.topic.payment-fail}")
     private String paymentFailTopic;
 
-    public void handlerSaga(Event event) {
+    public void handleSaga(Event event) {
         switch (event.getStatus()) {
             case SUCCESS -> handleSuccess(event);
             case ROLLBACK_PENDING -> handleRollbackPending(event);
@@ -38,8 +38,8 @@ public class SagaExecutionController {
     }
 
     private void handleSuccess(Event event) {
-        log.info("### CURRENT SAGA: {} | SUCCESS | NEXT TOPIC {} | {}", event.getSource(), notifyEndingTopic, createSagaId(event));
-        sendEvent(event, notifyEndingTopic);
+        log.info("### CURRENT SAGA: {} | SUCCESS | NEXT TOPIC {} | {}", event.getSource(), notifyEnding, createSagaId(event));
+        sendEvent(event, notifyEnding);
     }
 
     private void handleRollbackPending(Event event) {

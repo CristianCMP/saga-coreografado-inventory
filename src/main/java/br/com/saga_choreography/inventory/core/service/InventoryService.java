@@ -39,12 +39,12 @@ public class InventoryService {
             log.error("Error trying to update inventory: ", ex);
             handleFailCurrentNotExecuted(event, ex.getMessage());
         }
-
-        sagaExecutionController.handlerSaga(event);
+        sagaExecutionController.handleSaga(event);
     }
 
     private void checkCurrentValidation(Event event) {
-        if (orderInventoryRepository.existsByOrderIdAndTransactionId(event.getPayload().getId(), event.getPayload().getTransactionId())) {
+        if (orderInventoryRepository.existsByOrderIdAndTransactionId(
+                event.getPayload().getId(), event.getTransactionId())) {
             throw new ValidationException("There's another transactionId for this validation.");
         }
     }
@@ -60,7 +60,9 @@ public class InventoryService {
                 });
     }
 
-    private OrderInventory createOrderInventory(Event event, OrderProducts product, Inventory inventory) {
+    private OrderInventory createOrderInventory(Event event,
+                                                OrderProducts product,
+                                                Inventory inventory) {
         return OrderInventory
                 .builder()
                 .inventory(inventory)
@@ -73,14 +75,12 @@ public class InventoryService {
     }
 
     private void updateInventory(Order order) {
-        order
-                .getProducts()
-                .forEach(product -> {
-                    var inventory = findInventoryByProductCode(product.getProduct().getCode());
-                    checkInventory(inventory.getAvailable(), product.getQuantity());
-                    inventory.setAvailable(inventory.getAvailable() - product.getQuantity());
-                    inventoryRepository.save(inventory);
-                });
+        order.getProducts().forEach(product -> {
+            var inventory = findInventoryByProductCode(product.getProduct().getCode());
+            checkInventory(inventory.getAvailable(), product.getQuantity());
+            inventory.setAvailable(inventory.getAvailable() - product.getQuantity());
+            inventoryRepository.save(inventory);
+        });
     }
 
     private void checkInventory(int available, int orderQuantity) {
@@ -92,7 +92,7 @@ public class InventoryService {
     private void handleSuccess(Event event) {
         event.setStatus(SUCCESS);
         event.setSource(CURRENT_SOURCE);
-        addHistory(event, "inventory updated successfully!");
+        addHistory(event, "Inventory updated successfully!");
     }
 
     private void addHistory(Event event, String message) {
@@ -103,38 +103,35 @@ public class InventoryService {
                 .message(message)
                 .createdAt(LocalDateTime.now())
                 .build();
-
         event.addToHistory(history);
     }
 
     private void handleFailCurrentNotExecuted(Event event, String message) {
         event.setStatus(ROLLBACK_PENDING);
         event.setSource(CURRENT_SOURCE);
-        addHistory(event, "Fail to updated inventory: ".concat(message));
+        addHistory(event, "Fail to update inventory: ".concat(message));
     }
 
     public void rollbackInventory(Event event) {
         event.setStatus(FAIL);
         event.setSource(CURRENT_SOURCE);
-
         try {
             returnInventoryToPreviousValues(event);
             addHistory(event, "Rollback executed for inventory!");
         } catch (Exception ex) {
             addHistory(event, "Rollback not executed for inventory: ".concat(ex.getMessage()));
         }
-
-        sagaExecutionController.handlerSaga(event);
+        sagaExecutionController.handleSaga(event);
     }
 
     private void returnInventoryToPreviousValues(Event event) {
         orderInventoryRepository
-                .findAllByOrderIdAndTransactionId(event.getPayload().getId(), event.getPayload().getTransactionId())
+                .findByOrderIdAndTransactionId(event.getPayload().getId(), event.getTransactionId())
                 .forEach(orderInventory -> {
                     var inventory = orderInventory.getInventory();
                     inventory.setAvailable(orderInventory.getOldQuantity());
                     inventoryRepository.save(inventory);
-                    log.info("Restored inventory form order {} from {} to {}", event.getPayload().getId(), orderInventory.getNewQuantity(), inventory.getAvailable());
+                    log.info("Restored inventory for order {}: from {} to {}", event.getPayload().getId(), orderInventory.getNewQuantity(), inventory.getAvailable());
                 });
     }
 
@@ -144,3 +141,4 @@ public class InventoryService {
                 .orElseThrow(() -> new ValidationException("Inventory not found by informed product."));
     }
 }
+
